@@ -3,7 +3,7 @@ import { Badge } from "@/components/ui/badge";
 import { Eye } from "lucide-react";
 
 export interface AccountCardProps {
-  id: number;
+  id: string;
   code: string;
   rank: string;
   region: string;
