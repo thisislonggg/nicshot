@@ -7,6 +7,11 @@ import { useState, useCallback } from "react";
 import Index from "./pages/Index";
 import NotFound from "./pages/NotFound";
 import SplashScreen from "./components/SplashScreen";
+import Layout from "./components/Layout";
+import Marketplace from "./pages/Marketplace";
+import AccountDetail from "./pages/AccountDetail";
+import AdminPage from "./pages/AdminPage";
+import AdminLogin from "./pages/AdminLogin";
 
 const queryClient = new QueryClient();
 
@@ -25,6 +30,18 @@ const App = () => {
         {showSplash && <SplashScreen onComplete={handleSplashComplete} />}
         <BrowserRouter>
           <Routes>
+             <Route element={<Layout />}>
+                        <Route path="/" element={<Index />} />
+                        <Route path="/marketplace" element={<Marketplace />} />
+                        <Route path="/account/:id" element={<AccountDetail />} />
+                      </Route>
+            
+                      {/* Admin (NO Layout) */}
+                      <Route path="/admin-login" element={<AdminLogin />} />
+                      <Route path="/admin" element={<AdminPage />} />
+            
+                      {/* Fallback */}
+                      <Route path="*" element={<NotFound />} />
             <Route path="/" element={<Index />} />
             <Route path="*" element={<NotFound />} />
           </Routes>
