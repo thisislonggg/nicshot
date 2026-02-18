@@ -103,30 +103,18 @@ const AccountDetail = () => {
       </Link>
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-        <motion.div
-          initial={{ opacity: 0, x: -20 }}
-          animate={{ opacity: 1, x: 0 }}
-          className="glass-card overflow-hidden"
-        >
-          <div className="aspect-video bg-secondary flex items-center justify-center">
-            {account.image_url ? (
-              <img
-                src={account.image_url}
-                alt={account.code}
-                className="w-full h-full object-cover"
-              />
-            ) : (
-              <div className="text-center">
-                <p className="font-heading text-2xl font-bold text-foreground">
-                  {account.code}
-                </p>
-                <p className="text-sm text-muted-foreground mt-2">
-                  Account Gallery
-                </p>
-              </div>
-            )}
-          </div>
-        </motion.div>
+<motion.div
+  initial={{ opacity: 0, x: -20 }}
+  animate={{ opacity: 1, x: 0 }}
+  className="glass-card p-4 h-fit self-start"
+>
+  <img
+    src={account.image_url ?? ""}
+    alt={account.code}
+    className="block w-full h-auto rounded-lg"
+  />
+</motion.div>
+
 
         <motion.div
           initial={{ opacity: 0, x: 20 }}
