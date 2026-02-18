@@ -7,16 +7,16 @@
 @layer base {
   :root {
     /* Navy/White theme - Nicshot.vault */
-    --background: 222 100% 8%;       /* #000f41 deep navy */
-    --foreground: 0 0% 100%;          /* white */
+    --background: 222 100% 8%;
+    --foreground: 0 0% 100%;
 
-    --card: 222 80% 12%;              /* slightly lighter navy */
+    --card: 222 80% 12%;
     --card-foreground: 0 0% 100%;
 
     --popover: 222 80% 12%;
     --popover-foreground: 0 0% 100%;
 
-    --primary: 0 0% 100%;             /* white as primary */
+    --primary: 0 0% 100%;
     --primary-foreground: 222 100% 8%;
 
     --secondary: 222 60% 20%;
@@ -25,7 +25,7 @@
     --muted: 222 50% 16%;
     --muted-foreground: 220 20% 65%;
 
-    --accent: 217 91% 60%;            /* bright blue accent */
+    --accent: 217 91% 60%;
     --accent-foreground: 0 0% 100%;
 
     --destructive: 0 84% 60%;
@@ -67,7 +67,8 @@
   }
 
   body {
-    @apply bg-background text-foreground font-body antialiased;
+    @apply bg-background text-foreground antialiased;
+    font-family: 'Roboto', sans-serif;
     background-image:
       radial-gradient(circle at 20% 50%, hsl(217 91% 60% / 0.05) 0%, transparent 50%),
       radial-gradient(circle at 80% 20%, hsl(217 91% 60% / 0.08) 0%, transparent 50%),
@@ -76,7 +77,8 @@
   }
 
   h1, h2, h3, h4, h5, h6 {
-    @apply font-heading font-bold;
+    font-family: 'Montserrat', sans-serif;
+    @apply font-bold;
   }
 }
 
