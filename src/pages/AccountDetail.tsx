@@ -5,9 +5,11 @@ import { useEffect, useState } from "react";
 import { fetchAccountById } from "../services/account.service";
 import { RankBadge } from "@/components/ui/RankBadge";
 import { SEO } from "@/components/SEO";
-
+import { Skeleton } from "@/components/ui/skeleton";
+import { ChevronRight, Home } from "lucide-react";
 
 interface Account {
+  status: string;
   id: string;
   code: string;
   rank: string;
@@ -69,16 +71,46 @@ const AccountDetail = () => {
     </div>
   );
 
-  if (loading) {
-    return (
-      <div className="section-container py-20 text-center">
-        <div className="inline-block h-8 w-8 animate-spin rounded-full border-4 border-accent border-r-transparent rounded-full" />
-        <p className="mt-4 text-muted-foreground">
-          Loading account details...
-        </p>
+if (loading) {
+  return (
+    <div className="section-container py-10">
+      {/* Back Link Skeleton */}
+      <Skeleton className="h-5 w-32 mb-8 bg-white/5" />
+
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+        {/* Image Skeleton */}
+        <div className="glass-card p-4 h-fit self-start bg-[#0A101E]">
+          <Skeleton className="w-full aspect-[4/3] rounded-lg bg-white/5" />
+        </div>
+
+        {/* Details Skeleton */}
+        <div className="glass-card p-8 bg-[#0A101E]">
+          <Skeleton className="h-10 w-32 rounded-lg bg-white/10 mb-6" />
+
+          <div className="space-y-4">
+            <Skeleton className="h-12 w-full rounded-lg bg-white/5" />
+            <Skeleton className="h-6 w-full bg-white/5" />
+            <Skeleton className="h-6 w-full bg-white/5" />
+            <Skeleton className="h-8 w-1/2 bg-white/10 mt-2" />
+          </div>
+
+          <Skeleton className="h-px w-full my-6 bg-white/10" />
+
+          <Skeleton className="h-16 w-full bg-white/5 mb-6" />
+
+          <div className="space-y-3 mb-6">
+            <Skeleton className="h-5 w-1/3 bg-white/5" />
+            <Skeleton className="h-5 w-1/3 bg-white/5" />
+            <Skeleton className="h-5 w-1/3 bg-white/5" />
+          </div>
+
+          {/* Tombol Buy Now Skeleton */}
+          <Skeleton className="h-14 w-full rounded-lg bg-blue-500/20 mt-8" />
+        </div>
       </div>
-    );
-  }
+    </div>
+  );
+}
 
   if (error || !account) {
     return (
@@ -91,26 +123,57 @@ const AccountDetail = () => {
         description={`Valorant Account ${account.code} | Rank: ${account.rank} | ${account.skins_count} Skins | Full Agents. Beli sekarang seharga IDR ${account.price.toLocaleString("id-ID")} hanya di Nicshot.vault.`}
         image={account.image_url || undefined}
       />
-        <Link
-          to="/marketplace"
-          className="mt-4 inline-flex items-center gap-2 text-accent text-sm"
-        >
-          <ArrowLeft size={16} /> Back to Marketplace
-        </Link>
+<nav className="flex items-center gap-2 text-sm text-muted-foreground font-medium mb-8">
+  {/* Link ke Home */}
+  <Link to="/" className="flex items-center gap-1.5 hover:text-accent transition-colors">
+    <Home size={14} />
+    Home
+  </Link>
+  
+  <ChevronRight size={14} className="opacity-50" />
+  
+  {/* Link ke Marketplace */}
+  <Link to="/marketplace" className="hover:text-accent transition-colors">
+    Marketplace
+  </Link>
+  
+  <ChevronRight size={14} className="opacity-50" />
+  
+  {/* Posisi Saat Ini (Teks statis, bukan link) */}
+  <span className="text-foreground">
+    {account.code}
+  </span>
+</nav>
       </div>
     );
   }
 
   return (
     <div className="section-container py-10">
-      <Link
-        to="/marketplace"
-        className="inline-flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground transition-colors mb-8"
-      >
-        <ArrowLeft size={16} /> Back to Marketplace
-      </Link>
+<nav className="flex items-center gap-2 text-sm text-muted-foreground font-medium mb-8">
+  {/* Link ke Home */}
+  <Link to="/" className="flex items-center gap-1.5 hover:text-accent transition-colors">
+    <Home size={14} />
+    Home
+  </Link>
+  
+  <ChevronRight size={14} className="opacity-50" />
+  
+  {/* Link ke Marketplace */}
+  <Link to="/marketplace" className="hover:text-accent transition-colors">
+    Marketplace
+  </Link>
+  
+  <ChevronRight size={14} className="opacity-50" />
+  
+  {/* Posisi Saat Ini (Teks statis, bukan link) */}
+  <span className="text-foreground">
+    {account.code}
+  </span>
+</nav>
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+        
 <motion.div
   initial={{ opacity: 0, x: -20 }}
   animate={{ opacity: 1, x: 0 }}
@@ -204,14 +267,21 @@ const AccountDetail = () => {
             </div>
           )}
 
-          <a
-            href={`https://wa.me/6282302450239?text=Hi%2C%20saya%20ingin%20membeli%20akun%20${account.code}`}
-            target="_blank"
-            rel="noopener noreferrer"
-            className="mt-6 w-full inline-flex items-center justify-center gap-2 px-8 py-4 rounded-lg font-heading font-bold text-sm bg-accent text-accent-foreground btn-glow transition-all duration-300 hover:scale-[1.02]"
-          >
-            <Shield size={16} /> Buy Now <ExternalLink size={14} />
-          </a>
+{/* GANTI TOMBOL BUY NOW LAMA DENGAN INI */}
+{account.status === "sold" ? (
+  <div className="mt-6 w-full inline-flex items-center justify-center gap-2 px-8 py-4 rounded-lg font-heading font-bold text-sm bg-red-500/10 text-red-500 border border-red-500/20 cursor-not-allowed">
+    <XCircle size={16} /> Account Sold Out
+  </div>
+) : (
+  <a
+    href={`https://wa.me/6282302450239?text=Hi%2C%20saya%20ingin%20membeli%20akun%20${account.code}`}
+    target="_blank"
+    rel="noopener noreferrer"
+    className="mt-6 w-full inline-flex items-center justify-center gap-2 px-8 py-4 rounded-lg font-heading font-bold text-sm bg-accent text-accent-foreground btn-glow transition-all duration-300 hover:scale-[1.02]"
+  >
+    <Shield size={16} /> Buy Now <ExternalLink size={14} />
+  </a>
+)}
         </motion.div>
       </div>
     </div>

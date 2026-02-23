@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import { supabase } from "@/lib/supabase";
 import { useNavigate } from "react-router-dom";
-import { LogOut, PlusCircle, Trash2, Edit, RefreshCw } from "lucide-react";
+import { LogOut, PlusCircle, Trash2, Edit, RefreshCw, Wallet, Package, Gamepad2 } from "lucide-react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import {
@@ -12,7 +12,7 @@ import {
 } from "@/services/account.service";
 
 const ranks = [
-  "Radiant", "Immortal", "Diamond", "Platinum", "Gold", "Silver", "Bronze", "Iron",
+  "Radiant", "Immortal", "Ascendant", "Diamond", "Platinum", "Gold", "Silver", "Bronze", "Iron",
 ];
 const regions = ["AP", "NA", "EU", "KR", "BR", "LATAM"];
 
@@ -170,10 +170,7 @@ const AdminPage = () => {
     setMissingAgents([]);
   };
 
-  // -- ACTION HANDLERS FOR MANAGE TAB --
-
   const handleEdit = (acc: Account) => {
-    // Populate form
     setForm({
       code: acc.code,
       rank: acc.rank,
@@ -190,7 +187,6 @@ const AdminPage = () => {
     setEditingId(acc.id);
     setImagePreview(acc.image_url);
 
-    // Infer Agent Mode
     if (acc.agents && acc.agents.length === 1 && acc.agents[0] === "All Unlocked") {
       setAgentMode("full");
       setMissingAgents([]);
@@ -230,6 +226,13 @@ const AdminPage = () => {
     }
   };
 
+  // --- MENGHITUNG STATISTIK ADMIN ---
+  const totalAccounts = accounts.length;
+  const stockAvailable = accounts.filter((acc) => acc.status === "available").length;
+  const totalRevenue = accounts
+    .filter((acc) => acc.status === "sold")
+    .reduce((sum, acc) => sum + acc.price, 0);
+
   if (loading) {
     return (
       <div className="min-h-screen flex items-center justify-center text-muted-foreground">
@@ -255,7 +258,7 @@ const AdminPage = () => {
         </div>
       </div>
 
-      <div className="section-container py-10 max-w-5xl">
+      <div className="section-container py-10 max-w-6xl">
         <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
           <TabsList className="grid w-full max-w-md grid-cols-2 mb-8">
             <TabsTrigger value="manage">Manage Accounts</TabsTrigger>
@@ -265,9 +268,58 @@ const AdminPage = () => {
           </TabsList>
 
           {/* ================================================= */}
-          {/* MANAGE TAB                        */}
+          {/* MANAGE TAB                                        */}
           {/* ================================================= */}
           <TabsContent value="manage">
+            
+            {/* --- ADMIN SUMMARY CARDS --- */}
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+              {/* Card 1: Total Accounts */}
+              <div className="glass-card p-6 border-l-4 border-l-blue-500 bg-[#0A101E]">
+                <div className="flex justify-between items-start">
+                  <div>
+                    <h3 className="text-muted-foreground text-sm font-semibold uppercase tracking-wider">Total Accounts</h3>
+                    <p className="text-3xl font-heading font-bold text-white mt-2">{totalAccounts}</p>
+                  </div>
+                  <div className="p-3 bg-blue-500/10 rounded-lg text-blue-500">
+                    <Gamepad2 size={24} />
+                  </div>
+                </div>
+              </div>
+
+              {/* Card 2: Stock Available */}
+              <div className="glass-card p-6 border-l-4 border-l-green-500 bg-[#0A101E]">
+                <div className="flex justify-between items-start">
+                  <div>
+                    <h3 className="text-muted-foreground text-sm font-semibold uppercase tracking-wider">Stock Available</h3>
+                    <p className="text-3xl font-heading font-bold text-white mt-2">{stockAvailable}</p>
+                  </div>
+                  <div className="p-3 bg-green-500/10 rounded-lg text-green-500">
+                    <Package size={24} />
+                  </div>
+                </div>
+              </div>
+
+              {/* Card 3: Total Revenue */}
+              <div className="glass-card p-6 border-l-4 border-l-accent bg-[#0A101E]">
+                <div className="flex justify-between items-start">
+                  <div>
+                    <h3 className="text-muted-foreground text-sm font-semibold uppercase tracking-wider">Gross Revenue</h3>
+                    <p className="text-2xl lg:text-3xl font-heading font-bold text-[#3B82F6] mt-2 truncate" title={`IDR ${totalRevenue.toLocaleString("id-ID")}`}>
+                      Rp {totalRevenue > 1000000 ? `${(totalRevenue / 1000000).toFixed(1)}M` : totalRevenue.toLocaleString("id-ID")}
+                    </p>
+                  </div>
+                  <div className="p-3 bg-accent/10 rounded-lg text-accent">
+                    <Wallet size={24} />
+                  </div>
+                </div>
+                <p className="text-xs text-muted-foreground mt-2 flex items-center gap-1">
+                  *From <span className="text-white font-bold">{totalAccounts - stockAvailable}</span> sold accounts
+                </p>
+              </div>
+            </div>
+            {/* --- END SUMMARY CARDS --- */}
+
             <div className="glass-card p-6 rounded-xl border border-border">
               <div className="flex justify-between items-center mb-6">
                 <h2 className="font-heading text-xl font-semibold">Account Database</h2>
@@ -279,10 +331,10 @@ const AdminPage = () => {
                 </button>
               </div>
 
-              <div className="rounded-md border border-border">
-                <Table>
+              <div className="rounded-md border border-border overflow-x-auto">
+                <Table className="min-w-[600px]">
                   <TableHeader>
-                    <TableRow>
+                    <TableRow className="hover:bg-transparent">
                       <TableHead>Code</TableHead>
                       <TableHead>Rank</TableHead>
                       <TableHead>Price (IDR)</TableHead>
@@ -302,17 +354,18 @@ const AdminPage = () => {
                     ) : (
                       accounts.map((acc) => (
                         <TableRow key={acc.id}>
-                          <TableCell className="font-medium text-accent">{acc.code}</TableCell>
-                          <TableCell>{acc.rank}</TableCell>
-                          <TableCell>{acc.price.toLocaleString("id-ID")}</TableCell>
+                          <TableCell className="font-medium text-white">{acc.code}</TableCell>
+                          <TableCell className="text-muted-foreground">{acc.rank}</TableCell>
+                          <TableCell className="font-semibold text-accent">{acc.price.toLocaleString("id-ID")}</TableCell>
                           <TableCell>
                             <button
                               onClick={() => handleToggleStatus(acc.id, acc.status)}
-                              className={`px-2 py-1 text-xs rounded-full font-medium ${
+                              className={`px-3 py-1 text-[10px] rounded-full font-bold tracking-wider transition-colors ${
                                 acc.status === "available"
-                                  ? "bg-green-500/10 text-green-500 border border-green-500/20"
-                                  : "bg-red-500/10 text-red-500 border border-red-500/20"
+                                  ? "bg-green-500/10 text-green-400 border border-green-500/20 hover:bg-green-500/20"
+                                  : "bg-red-500/10 text-red-400 border border-red-500/20 hover:bg-red-500/20"
                               }`}
+                              title="Click to toggle status"
                             >
                               {acc.status.toUpperCase()}
                             </button>
@@ -320,14 +373,14 @@ const AdminPage = () => {
                           <TableCell className="text-right space-x-2">
                             <button
                               onClick={() => handleEdit(acc)}
-                              className="inline-flex p-2 rounded bg-blue-500/10 text-blue-500 hover:bg-blue-500/20"
+                              className="inline-flex p-2 rounded bg-[#1E293B] text-blue-400 hover:bg-blue-500/20 transition-colors"
                               title="Edit"
                             >
                               <Edit size={16} />
                             </button>
                             <button
                               onClick={() => handleDelete(acc.id, acc.code)}
-                              className="inline-flex p-2 rounded bg-red-500/10 text-red-500 hover:bg-red-500/20"
+                              className="inline-flex p-2 rounded bg-[#1E293B] text-red-400 hover:bg-red-500/20 transition-colors"
                               title="Delete"
                             >
                               <Trash2 size={16} />
@@ -343,7 +396,7 @@ const AdminPage = () => {
           </TabsContent>
 
           {/* ================================================= */}
-          {/* ADD / EDIT TAB                     */}
+          {/* ADD / EDIT TAB                                    */}
           {/* ================================================= */}
           <TabsContent value="add">
             <div className="glass-card p-8 rounded-xl border border-border">
@@ -410,7 +463,7 @@ const AdminPage = () => {
                 </p>
 
                 {/* AREA AGENT KHUSUS */}
-                <div className="space-y-4 p-5 rounded-xl border border-border bg-background/50">
+                <div className="space-y-4 p-5 rounded-xl border border-border bg-[#0A101E]/50">
                   <h3 className="font-semibold text-sm">Agents Management</h3>
                   <select value={agentMode} onChange={(e) => setAgentMode(e.target.value as any)} className="input-style">
                     <option value="full">All Agents Unlocked</option>
@@ -423,7 +476,7 @@ const AdminPage = () => {
                       <p className="text-xs text-muted-foreground mb-3">Klik agent yang <b>TIDAK ADA</b>:</p>
                       <div className="flex flex-wrap gap-2">
                         {allAgents.map((agent) => (
-                          <button type="button" key={agent} onClick={() => toggleAgent(agent, missingAgents, setMissingAgents)} className={`px-2 py-1 text-xs font-medium rounded-md border transition-colors ${missingAgents.includes(agent) ? "bg-destructive/20 border-destructive text-destructive" : "bg-transparent border-border text-muted-foreground"}`}>
+                          <button type="button" key={agent} onClick={() => toggleAgent(agent, missingAgents, setMissingAgents)} className={`px-2 py-1 text-xs font-medium rounded-md border transition-colors ${missingAgents.includes(agent) ? "bg-red-500/20 border-red-500 text-red-400" : "bg-transparent border-border text-muted-foreground hover:border-white/20"}`}>
                             {agent}
                           </button>
                         ))}
@@ -436,7 +489,7 @@ const AdminPage = () => {
                       <p className="text-xs text-muted-foreground mb-3">Klik agent yang <b>SUDAH TERBUKA</b>:</p>
                       <div className="flex flex-wrap gap-2">
                         {allAgents.map((agent) => (
-                          <button type="button" key={agent} onClick={() => toggleAgent(agent, selectedAgents, setSelectedAgents)} className={`px-2 py-1 text-xs font-medium rounded-md border transition-colors ${selectedAgents.includes(agent) ? "bg-accent/20 border-accent text-accent" : "bg-transparent border-border text-muted-foreground"}`}>
+                          <button type="button" key={agent} onClick={() => toggleAgent(agent, selectedAgents, setSelectedAgents)} className={`px-2 py-1 text-xs font-medium rounded-md border transition-colors ${selectedAgents.includes(agent) ? "bg-accent/20 border-accent text-accent" : "bg-transparent border-border text-muted-foreground hover:border-white/20"}`}>
                             {agent}
                           </button>
                         ))}
@@ -463,10 +516,10 @@ const AdminPage = () => {
 
                 <div className="flex items-center gap-3 py-2">
                   <input type="checkbox" checked={form.is_featured} onChange={(e) => setForm({ ...form, is_featured: e.target.checked })} className="w-4 h-4 rounded" />
-                  <span className="text-sm font-medium">Mark as Featured Account</span>
+                  <span className="text-sm font-medium">Mark as Featured Account (Show on Homepage)</span>
                 </div>
 
-                <button type="submit" disabled={submitting} className="w-full py-4 rounded-lg font-heading font-bold text-sm bg-accent text-accent-foreground btn-glow transition-all hover:scale-[1.02] disabled:opacity-50">
+                <button type="submit" disabled={submitting} className="w-full py-4 rounded-lg font-heading font-bold text-sm bg-accent text-accent-foreground btn-glow transition-all hover:scale-[1.02] disabled:opacity-50 mt-4">
                   {submitting ? "Saving Account..." : editingId ? "Update Account" : "Add Account"}
                 </button>
               </form>

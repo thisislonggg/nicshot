@@ -4,6 +4,7 @@ import { Search, SlidersHorizontal, X, ChevronDown } from "lucide-react";
 import AccountCard from "@/components/AccountCard";
 import { fetchAccounts } from "../services/account.service";
 import { RankBadge } from "@/components/ui/RankBadge";
+import AccountCardSkeleton from "@/components/AccountCardSkeleton";
 
 interface Account {
   id: string;
@@ -105,6 +106,11 @@ const Marketplace = () => {
         // Already sorted by newest from DB
         break;
     }
+    result.sort((a, b) => {
+      if (a.status === "available" && b.status === "sold") return -1;
+      if (a.status === "sold" && b.status === "available") return 1;
+      return 0;
+    });
 
     return result;
   }, [accounts, search, selectedRanks, selectedRegion, minPrice, maxPrice, sortBy]);
@@ -283,9 +289,11 @@ const Marketplace = () => {
 
           {/* Loading & Error States */}
           {loading && (
-            <div className="flex flex-col items-center justify-center py-20 text-muted-foreground">
-              <div className="w-10 h-10 border-4 border-accent border-t-transparent rounded-full animate-spin mb-4"></div>
-              Loading premium accounts...
+            <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
+              {/* Menampilkan 6 skeleton kosong saat loading */}
+              {[1, 2, 3, 4, 5, 6].map((n) => (
+                <AccountCardSkeleton key={n} />
+              ))}
             </div>
           )}
 
@@ -316,6 +324,7 @@ const Marketplace = () => {
                         price={acc.price}
                         skinsCount={acc.skins_count}
                         imageUrl={acc.image_url}
+                        status={acc.status}
                       />
                     </motion.div>
                   ))}
