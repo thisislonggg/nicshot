@@ -3,6 +3,9 @@ import { motion } from "framer-motion";
 import { ArrowLeft, Shield, CheckCircle, XCircle, ExternalLink } from "lucide-react";
 import { useEffect, useState } from "react";
 import { fetchAccountById } from "../services/account.service";
+import { RankBadge } from "@/components/ui/RankBadge";
+import { SEO } from "@/components/SEO";
+
 
 interface Account {
   id: string;
@@ -83,6 +86,11 @@ const AccountDetail = () => {
         <h1 className="font-heading text-2xl font-bold text-foreground">
           {error || "Account Not Found"}
         </h1>
+        <SEO 
+        title={`Akun ${account.code} - ${account.rank}`}
+        description={`Valorant Account ${account.code} | Rank: ${account.rank} | ${account.skins_count} Skins | Full Agents. Beli sekarang seharga IDR ${account.price.toLocaleString("id-ID")} hanya di Nicshot.vault.`}
+        image={account.image_url || undefined}
+      />
         <Link
           to="/marketplace"
           className="mt-4 inline-flex items-center gap-2 text-accent text-sm"
@@ -128,10 +136,10 @@ const AccountDetail = () => {
           </div>
 
           <div className="space-y-3 text-sm">
-            <div className="flex justify-between">
-              <span className="text-muted-foreground">Rank</span>
-              <span className="font-semibold">{account.rank}</span>
-            </div>
+            <div className="flex justify-between items-center bg-[#0F172A] p-3 rounded-lg border border-white/5">
+  <span className="text-gray-400 uppercase tracking-wider text-xs font-bold">Current Rank</span>
+  <RankBadge rank={account.rank} iconSize="md" />
+</div>
             <div className="flex justify-between">
               <span className="text-muted-foreground">Region</span>
               <span className="font-semibold">{account.region}</span>

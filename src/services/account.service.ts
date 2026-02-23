@@ -1,7 +1,7 @@
 import { supabase } from "@/lib/supabase";
 
 /* ============================= */
-/*            TYPES              */
+/* TYPES              */
 /* ============================= */
 
 export interface Account {
@@ -39,7 +39,7 @@ export interface AccountFilters {
 }
 
 /* ============================= */
-/*        BASE QUERIES           */
+/* BASE QUERIES           */
 /* ============================= */
 
 export async function fetchAccounts(): Promise<Account[]> {
@@ -89,7 +89,7 @@ export async function fetchAccountById(id: string): Promise<Account> {
 }
 
 /* ============================= */
-/*   ADVANCED FILTER + PAGING    */
+/* ADVANCED FILTER + PAGING    */
 /* ============================= */
 
 export async function fetchAccountsWithFilters(
@@ -157,4 +157,33 @@ export async function fetchAccountsWithFilters(
     data: data ?? [],
     count: count ?? 0,
   };
+}
+
+/* ============================= */
+/* ADMIN QUERIES         */
+/* ============================= */
+
+export async function fetchAllAdminAccounts(): Promise<Account[]> {
+  const { data, error } = await supabase
+    .from("accounts")
+    .select("*")
+    .order("created_at", { ascending: false });
+
+  if (error) throw error;
+  return data ?? [];
+}
+
+export async function deleteAccount(id: string): Promise<void> {
+  const { error } = await supabase.from("accounts").delete().eq("id", id);
+  if (error) throw error;
+}
+
+export async function updateAccountStatus(id: string, status: string): Promise<void> {
+  const { error } = await supabase.from("accounts").update({ status }).eq("id", id);
+  if (error) throw error;
+}
+
+export async function updateAccount(id: string, payload: Partial<Account>): Promise<void> {
+  const { error } = await supabase.from("accounts").update(payload).eq("id", id);
+  if (error) throw error;
 }

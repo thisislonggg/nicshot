@@ -5,7 +5,7 @@ import { useEffect, useState, useRef } from "react";
 import AccountCard from "@/components/AccountCard";
 import { fetchFeaturedAccounts } from "../services/account.service";
 import heroBg from "@/assets/hero-bg.jpg";
-
+import { SEO } from "@/components/SEO";
 
 interface Account {
   id: string;
@@ -89,6 +89,7 @@ const Index = () => {
 
   return (
     <div>
+      <SEO title="Premium Valorant Accounts" />
       {/* Hero */}
       <section className="relative overflow-hidden min-h-[80vh] flex items-center">
         <img

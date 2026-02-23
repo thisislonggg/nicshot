@@ -1,6 +1,6 @@
 import { Link } from "react-router-dom";
-import { Badge } from "@/components/ui/badge";
 import { Eye } from "lucide-react";
+import { RankBadge } from "@/components/ui/RankBadge";
 
 export interface AccountCardProps {
   id: string;
@@ -12,55 +12,59 @@ export interface AccountCardProps {
   imageUrl?: string;
 }
 
-const rankColors: Record<string, string> = {
-  radiant: "bg-yellow-500/20 text-yellow-300 border-yellow-500/30",
-  immortal: "bg-red-500/20 text-red-300 border-red-500/30",
-  diamond: "bg-purple-500/20 text-purple-300 border-purple-500/30",
-  platinum: "bg-cyan-500/20 text-cyan-300 border-cyan-500/30",
-  gold: "bg-amber-500/20 text-amber-300 border-amber-500/30",
-  silver: "bg-gray-400/20 text-gray-300 border-gray-400/30",
-  bronze: "bg-orange-500/20 text-orange-300 border-orange-500/30",
-  iron: "bg-stone-500/20 text-stone-300 border-stone-500/30",
-};
-
 const AccountCard = ({ id, code, rank, region, price, skinsCount, imageUrl }: AccountCardProps) => {
-  const rankKey = rank.toLowerCase().replace(/\s+/g, "");
-  const rankClass = rankColors[rankKey] || "bg-muted text-muted-foreground";
-
   return (
     <Link to={`/account/${id}`} className="block group">
-      <div className="glass-card-hover overflow-hidden">
-        {/* Image */}
-        <div className="relative h-40 bg-secondary overflow-hidden">
+      <div className="glass-card-hover overflow-hidden rounded-xl border border-border/50 hover:border-accent transition-all duration-300 bg-[#0A101E]">
+        {/* Image Section */}
+        <div className="relative h-48 bg-secondary overflow-hidden">
           {imageUrl ? (
-            <img src={imageUrl} alt={code} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" />
+            <img 
+              src={imageUrl} 
+              alt={code} 
+              className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-700 ease-out" 
+            />
           ) : (
-            <div className="w-full h-full flex items-center justify-center text-muted-foreground font-heading text-lg">
+            <div className="w-full h-full flex items-center justify-center text-muted-foreground font-heading text-lg bg-[#0F172A]">
               {code}
             </div>
           )}
-          <div className="absolute top-3 left-3">
-            <span className={`inline-flex items-center px-2.5 py-1 rounded-md text-xs font-semibold border ${rankClass}`}>
-              {rank}
-            </span>
+
+          {/* VIBE GAME: Rank Icon Badge (Kiri Atas) */}
+          <div className="absolute top-3 left-3 bg-black/70 backdrop-blur-md px-2.5 py-1.5 rounded-lg border border-white/10 shadow-lg flex items-center">
+            <RankBadge 
+              rank={rank} 
+              showText={true} 
+              iconSize="sm" 
+              className="text-[11px]" // Mengecilkan sedikit ukuran teks agar pas di dalam kartu
+            />
           </div>
-          <div className="absolute top-3 right-3">
-            <span className="inline-flex items-center px-2 py-1 rounded-md text-xs bg-background/60 backdrop-blur-sm text-foreground border border-border/50">
-              {region}
-            </span>
+
+          {/* VIBE GAME: Region Badge (Kanan Atas) */}
+          <div className="absolute top-3 right-3 bg-accent/90 text-white backdrop-blur-sm px-2.5 py-1 rounded-md text-[10px] font-bold uppercase tracking-widest shadow-lg">
+            {region}
           </div>
         </div>
 
-        {/* Info */}
-        <div className="p-4">
-          <h3 className="font-heading text-sm font-semibold text-foreground truncate">{code}</h3>
-          <p className="text-xs text-muted-foreground mt-1">{skinsCount} Skins</p>
-          <div className="mt-3 flex items-center justify-between">
-            <span className="font-heading text-lg font-bold gradient-text">
-              IDR {price.toLocaleString()}
+        {/* Info Section */}
+        <div className="p-5">
+          <div className="flex justify-between items-start mb-2">
+            <h3 className="font-heading text-lg font-bold text-foreground truncate drop-shadow-sm">
+              {code}
+            </h3>
+            <span className="text-xs font-semibold text-muted-foreground bg-white/5 border border-white/5 px-2 py-1 rounded-md">
+              {skinsCount} Skins
             </span>
-            <span className="flex items-center gap-1 text-xs text-accent opacity-0 group-hover:opacity-100 transition-opacity">
-              <Eye size={14} /> View
+          </div>
+          
+          <div className="mt-4 flex items-center justify-between">
+            <span className="font-heading text-lg font-bold text-[#3B82F6] drop-shadow-[0_0_8px_rgba(59,130,246,0.3)]">
+              IDR {price.toLocaleString("id-ID")}
+            </span>
+            
+            {/* Animasi View: Muncul dan geser dari kanan saat di-hover */}
+            <span className="flex items-center gap-1.5 text-sm font-semibold text-accent opacity-0 translate-x-2 group-hover:opacity-100 group-hover:translate-x-0 transition-all duration-300">
+              <Eye size={16} /> View
             </span>
           </div>
         </div>
