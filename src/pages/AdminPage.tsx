@@ -1,7 +1,7 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, useRef } from "react";
 import { supabase } from "@/lib/supabase";
 import { useNavigate } from "react-router-dom";
-import { LogOut, PlusCircle, Trash2, Edit, RefreshCw, Wallet, Package, Gamepad2 } from "lucide-react";
+import { LogOut, PlusCircle, Trash2, Edit, RefreshCw, Wallet, Package, Gamepad2, Search, X } from "lucide-react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import {
@@ -38,9 +38,17 @@ const AdminPage = () => {
   const [imageFile, setImageFile] = useState<File | null>(null);
   const [imagePreview, setImagePreview] = useState<string | null>(null);
 
+  // --- AGENT STATE ---
   const [agentMode, setAgentMode] = useState<"full" | "missing" | "manual">("full");
   const [selectedAgents, setSelectedAgents] = useState<string[]>([]);
   const [missingAgents, setMissingAgents] = useState<string[]>([]);
+
+  // --- SKIN STATE (BARU) ---
+  const [availableSkins, setAvailableSkins] = useState<string[]>([]);
+  const [selectedSkins, setSelectedSkins] = useState<string[]>([]);
+  const [skinSearch, setSkinSearch] = useState("");
+  const [showSkinDropdown, setShowSkinDropdown] = useState(false);
+  const dropdownRef = useRef<HTMLDivElement>(null);
 
   const initialForm = {
     code: "",
@@ -49,7 +57,6 @@ const AdminPage = () => {
     skins_count: 0,
     price: 0,
     description: "",
-    skins: "",
     is_featured: false,
     email_verified: false,
     premier_unlinked: false,
@@ -58,6 +65,7 @@ const AdminPage = () => {
 
   const [form, setForm] = useState(initialForm);
 
+  // Load Auth & Accounts
   useEffect(() => {
     const checkAuth = async () => {
       const { data } = await supabase.auth.getUser();
@@ -70,6 +78,34 @@ const AdminPage = () => {
     };
     checkAuth();
   }, [navigate]);
+
+  // Load Daftar Nama Skin dari Valorant API (Satu kali saat masuk halaman Admin)
+  useEffect(() => {
+    fetch("https://valorant-api.com/v1/weapons/skins")
+      .then((res) => res.json())
+      .then((data) => {
+        // Ambil nama skin, hapus yang bertuliskan "Standard" atau "Random"
+        const skins = data.data
+          .map((s: any) => s.displayName)
+          .filter((name: string) => !name.toLowerCase().includes("standard") && !name.toLowerCase().includes("random"));
+        
+        // Buang nama yang duplikat (menggunakan Set)
+        const uniqueSkins = Array.from(new Set(skins)) as string[];
+        setAvailableSkins(uniqueSkins);
+      })
+      .catch((err) => console.error("Gagal memuat daftar skin:", err));
+  }, []);
+
+  // Tutup dropdown jika klik di luar area
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (dropdownRef.current && !dropdownRef.current.contains(event.target as Node)) {
+        setShowSkinDropdown(false);
+      }
+    };
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, []);
 
   const loadAccounts = async () => {
     setFetchingAccounts(true);
@@ -111,12 +147,20 @@ const AdminPage = () => {
     }
   };
 
+  const toggleSkin = (skin: string) => {
+    if (selectedSkins.includes(skin)) {
+      setSelectedSkins(selectedSkins.filter((s) => s !== skin));
+    } else {
+      setSelectedSkins([...selectedSkins, skin]);
+    }
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setSubmitting(true);
 
     try {
-      let imageUrl = imagePreview; // keep existing if no new image uploaded
+      let imageUrl = imagePreview; 
       if (imageFile) {
         imageUrl = await uploadImage();
       }
@@ -132,7 +176,7 @@ const AdminPage = () => {
 
       const payload = {
         ...form,
-        skins: form.skins.split(",").map((s) => s.trim()).filter(Boolean),
+        skins: selectedSkins, // <- Sekarang langsung mengirim array dari state
         agents: finalAgentsArray,
         image_url: imageUrl,
       };
@@ -149,7 +193,6 @@ const AdminPage = () => {
         alert("Account added successfully");
       }
 
-      // Reset
       resetForm();
       loadAccounts();
       setActiveTab("manage");
@@ -168,6 +211,8 @@ const AdminPage = () => {
     setAgentMode("full");
     setSelectedAgents([]);
     setMissingAgents([]);
+    setSelectedSkins([]); // Reset skins
+    setSkinSearch("");
   };
 
   const handleEdit = (acc: Account) => {
@@ -178,7 +223,6 @@ const AdminPage = () => {
       skins_count: acc.skins_count,
       price: acc.price,
       description: acc.description || "",
-      skins: acc.skins ? acc.skins.join(", ") : "",
       is_featured: acc.is_featured,
       email_verified: acc.email_verified,
       premier_unlinked: acc.premier_unlinked,
@@ -186,6 +230,7 @@ const AdminPage = () => {
     });
     setEditingId(acc.id);
     setImagePreview(acc.image_url);
+    setSelectedSkins(acc.skins || []); // Load skin yang sudah ada
 
     if (acc.agents && acc.agents.length === 1 && acc.agents[0] === "All Unlocked") {
       setAgentMode("full");
@@ -226,7 +271,6 @@ const AdminPage = () => {
     }
   };
 
-  // --- MENGHITUNG STATISTIK ADMIN ---
   const totalAccounts = accounts.length;
   const stockAvailable = accounts.filter((acc) => acc.status === "available").length;
   const totalRevenue = accounts
@@ -240,6 +284,11 @@ const AdminPage = () => {
       </div>
     );
   }
+
+  // Filter skin untuk dropdown pencarian
+  const filteredSkins = availableSkins.filter(skin => 
+    skin.toLowerCase().includes(skinSearch.toLowerCase()) && !selectedSkins.includes(skin)
+  );
 
   return (
     <div className="min-h-screen bg-background">
@@ -271,36 +320,27 @@ const AdminPage = () => {
           {/* MANAGE TAB                                        */}
           {/* ================================================= */}
           <TabsContent value="manage">
-            
-            {/* --- ADMIN SUMMARY CARDS --- */}
             <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
-              {/* Card 1: Total Accounts */}
               <div className="glass-card p-6 border-l-4 border-l-blue-500 bg-[#0A101E]">
                 <div className="flex justify-between items-start">
                   <div>
                     <h3 className="text-muted-foreground text-sm font-semibold uppercase tracking-wider">Total Accounts</h3>
                     <p className="text-3xl font-heading font-bold text-white mt-2">{totalAccounts}</p>
                   </div>
-                  <div className="p-3 bg-blue-500/10 rounded-lg text-blue-500">
-                    <Gamepad2 size={24} />
-                  </div>
+                  <div className="p-3 bg-blue-500/10 rounded-lg text-blue-500"><Gamepad2 size={24} /></div>
                 </div>
               </div>
 
-              {/* Card 2: Stock Available */}
               <div className="glass-card p-6 border-l-4 border-l-green-500 bg-[#0A101E]">
                 <div className="flex justify-between items-start">
                   <div>
                     <h3 className="text-muted-foreground text-sm font-semibold uppercase tracking-wider">Stock Available</h3>
                     <p className="text-3xl font-heading font-bold text-white mt-2">{stockAvailable}</p>
                   </div>
-                  <div className="p-3 bg-green-500/10 rounded-lg text-green-500">
-                    <Package size={24} />
-                  </div>
+                  <div className="p-3 bg-green-500/10 rounded-lg text-green-500"><Package size={24} /></div>
                 </div>
               </div>
 
-              {/* Card 3: Total Revenue */}
               <div className="glass-card p-6 border-l-4 border-l-accent bg-[#0A101E]">
                 <div className="flex justify-between items-start">
                   <div>
@@ -309,24 +349,15 @@ const AdminPage = () => {
                       Rp {totalRevenue > 1000000 ? `${(totalRevenue / 1000000).toFixed(1)}M` : totalRevenue.toLocaleString("id-ID")}
                     </p>
                   </div>
-                  <div className="p-3 bg-accent/10 rounded-lg text-accent">
-                    <Wallet size={24} />
-                  </div>
+                  <div className="p-3 bg-accent/10 rounded-lg text-accent"><Wallet size={24} /></div>
                 </div>
-                <p className="text-xs text-muted-foreground mt-2 flex items-center gap-1">
-                  *From <span className="text-white font-bold">{totalAccounts - stockAvailable}</span> sold accounts
-                </p>
               </div>
             </div>
-            {/* --- END SUMMARY CARDS --- */}
 
             <div className="glass-card p-6 rounded-xl border border-border">
               <div className="flex justify-between items-center mb-6">
                 <h2 className="font-heading text-xl font-semibold">Account Database</h2>
-                <button 
-                  onClick={loadAccounts} 
-                  className="flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground"
-                >
+                <button onClick={loadAccounts} className="flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground">
                   <RefreshCw size={14} className={fetchingAccounts ? "animate-spin" : ""} /> Refresh
                 </button>
               </div>
@@ -344,13 +375,9 @@ const AdminPage = () => {
                   </TableHeader>
                   <TableBody>
                     {fetchingAccounts ? (
-                      <TableRow>
-                        <TableCell colSpan={5} className="text-center py-8 text-muted-foreground">Loading accounts...</TableCell>
-                      </TableRow>
+                      <TableRow><TableCell colSpan={5} className="text-center py-8 text-muted-foreground">Loading accounts...</TableCell></TableRow>
                     ) : accounts.length === 0 ? (
-                      <TableRow>
-                        <TableCell colSpan={5} className="text-center py-8 text-muted-foreground">No accounts found.</TableCell>
-                      </TableRow>
+                      <TableRow><TableCell colSpan={5} className="text-center py-8 text-muted-foreground">No accounts found.</TableCell></TableRow>
                     ) : (
                       accounts.map((acc) => (
                         <TableRow key={acc.id}>
@@ -361,30 +388,15 @@ const AdminPage = () => {
                             <button
                               onClick={() => handleToggleStatus(acc.id, acc.status)}
                               className={`px-3 py-1 text-[10px] rounded-full font-bold tracking-wider transition-colors ${
-                                acc.status === "available"
-                                  ? "bg-green-500/10 text-green-400 border border-green-500/20 hover:bg-green-500/20"
-                                  : "bg-red-500/10 text-red-400 border border-red-500/20 hover:bg-red-500/20"
+                                acc.status === "available" ? "bg-green-500/10 text-green-400 border border-green-500/20 hover:bg-green-500/20" : "bg-red-500/10 text-red-400 border border-red-500/20 hover:bg-red-500/20"
                               }`}
-                              title="Click to toggle status"
                             >
                               {acc.status.toUpperCase()}
                             </button>
                           </TableCell>
                           <TableCell className="text-right space-x-2">
-                            <button
-                              onClick={() => handleEdit(acc)}
-                              className="inline-flex p-2 rounded bg-[#1E293B] text-blue-400 hover:bg-blue-500/20 transition-colors"
-                              title="Edit"
-                            >
-                              <Edit size={16} />
-                            </button>
-                            <button
-                              onClick={() => handleDelete(acc.id, acc.code)}
-                              className="inline-flex p-2 rounded bg-[#1E293B] text-red-400 hover:bg-red-500/20 transition-colors"
-                              title="Delete"
-                            >
-                              <Trash2 size={16} />
-                            </button>
+                            <button onClick={() => handleEdit(acc)} className="inline-flex p-2 rounded bg-[#1E293B] text-blue-400 hover:bg-blue-500/20 transition-colors"><Edit size={16} /></button>
+                            <button onClick={() => handleDelete(acc.id, acc.code)} className="inline-flex p-2 rounded bg-[#1E293B] text-red-400 hover:bg-red-500/20 transition-colors"><Trash2 size={16} /></button>
                           </TableCell>
                         </TableRow>
                       ))
@@ -408,59 +420,101 @@ const AdminPage = () => {
                   </h2>
                 </div>
                 {editingId && (
-                  <button onClick={resetForm} className="text-sm text-red-400 hover:underline">
-                    Cancel Edit
-                  </button>
+                  <button onClick={resetForm} className="text-sm text-red-400 hover:underline">Cancel Edit</button>
                 )}
               </div>
 
               <form onSubmit={handleSubmit} className="space-y-6">
-                {/* IMAGE */}
                 <div>
                   <label className="block text-sm font-medium mb-2">Account Image</label>
-                  {imagePreview && (
-                    <img src={imagePreview} className="w-48 h-28 object-cover rounded-lg border border-border mb-3" alt="Preview" />
-                  )}
-                  <input
-                    type="file"
-                    accept="image/*"
-                    onChange={(e) => e.target.files && handleImageChange(e.target.files[0])}
-                    className="text-sm text-muted-foreground file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-accent/10 file:text-accent hover:file:bg-accent/20 cursor-pointer"
-                  />
+                  {imagePreview && <img src={imagePreview} className="w-48 h-28 object-cover rounded-lg border border-border mb-3" alt="Preview" />}
+                  <input type="file" accept="image/*" onChange={(e) => e.target.files && handleImageChange(e.target.files[0])} className="text-sm text-muted-foreground file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-accent/10 file:text-accent hover:file:bg-accent/20 cursor-pointer" />
                 </div>
 
-                {/* GRID DETAILS */}
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                  <p>Code:
-                    <input value={form.code} onChange={(e) => setForm({ ...form, code: e.target.value })} className="input-style mt-1" required disabled={!!editingId} />
-                  </p>
-                  <p>Rank:
+                  <p>Code: <input value={form.code} onChange={(e) => setForm({ ...form, code: e.target.value })} className="input-style mt-1" required disabled={!!editingId} /></p>
+                  <p>Rank: 
                     <select value={form.rank} onChange={(e) => setForm({ ...form, rank: e.target.value })} className="input-style mt-1" required>
                       <option value="">Select Rank</option>
                       {ranks.map((r) => <option key={r} value={r}>{r}</option>)}
                     </select>
                   </p>
-                  <p>Region:
+                  <p>Region: 
                     <select value={form.region} onChange={(e) => setForm({ ...form, region: e.target.value })} className="input-style mt-1" required>
                       <option value="">Select Region</option>
                       {regions.map((r) => <option key={r} value={r}>{r}</option>)}
                     </select>
                   </p>
-                  <p>Total Skin:
-                    <input type="number" value={form.skins_count} onChange={(e) => setForm({ ...form, skins_count: Number(e.target.value) })} className="input-style mt-1" />
-                  </p>
-                  <p className="md:col-span-2">Harga:
-                    <input type="number" value={form.price} onChange={(e) => setForm({ ...form, price: Number(e.target.value) })} className="input-style mt-1" required />
-                  </p>
+                  <p>Total Skin: <input type="number" value={form.skins_count} onChange={(e) => setForm({ ...form, skins_count: Number(e.target.value) })} className="input-style mt-1" /></p>
+                  <p className="md:col-span-2">Harga: <input type="number" value={form.price} onChange={(e) => setForm({ ...form, price: Number(e.target.value) })} className="input-style mt-1" required /></p>
                 </div>
 
-                <p>Description:
-                  <textarea value={form.description} onChange={(e) => setForm({ ...form, description: e.target.value })} className="input-style h-24 resize-none mt-1" />
-                </p>
+                <p>Description: <textarea value={form.description} onChange={(e) => setForm({ ...form, description: e.target.value })} className="input-style h-24 resize-none mt-1" /></p>
 
-                <p>List Skin (Pisahkan dengan koma):
-                  <textarea value={form.skins} onChange={(e) => setForm({ ...form, skins: e.target.value })} className="input-style h-20 resize-none mt-1" placeholder="Xerofang Vandal, Reaver Operator, ..." />
-                </p>
+                {/* AREA MANAJEMEN SKIN (BARU) */}
+                <div className="space-y-4 p-5 rounded-xl border border-border bg-[#0A101E]/50" ref={dropdownRef}>
+                  <div className="flex items-center justify-between">
+                    <h3 className="font-semibold text-sm">Skins Management</h3>
+                    <span className="text-xs text-muted-foreground bg-white/5 px-2 py-1 rounded">
+                      {selectedSkins.length} Selected
+                    </span>
+                  </div>
+
+                  {/* Badges Skin yang Terpilih */}
+                  {selectedSkins.length > 0 && (
+                    <div className="flex flex-wrap gap-2 mb-2 p-3 bg-black/20 rounded-lg border border-white/5">
+                      {selectedSkins.map((skin) => (
+                        <span key={skin} className="flex items-center gap-1.5 px-2.5 py-1 text-xs font-medium rounded-md bg-accent/20 border border-accent/30 text-accent">
+                          {skin}
+                          <button type="button" onClick={() => toggleSkin(skin)} className="hover:text-white transition-colors">
+                            <X size={12} />
+                          </button>
+                        </span>
+                      ))}
+                    </div>
+                  )}
+
+                  {/* Input Search Dropdown */}
+                  <div className="relative">
+                    <Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground" />
+                    <input
+                      type="text"
+                      placeholder="Cari & tambah nama skin (misal: Kuronomi, Reaver...)"
+                      value={skinSearch}
+                      onChange={(e) => {
+                        setSkinSearch(e.target.value);
+                        setShowSkinDropdown(true);
+                      }}
+                      onFocus={() => setShowSkinDropdown(true)}
+                      className="w-full pl-9 pr-4 py-2.5 rounded-lg border border-border bg-card text-sm outline-none focus:border-accent transition-colors"
+                    />
+                    
+                    {/* Dropdown Box */}
+                    {showSkinDropdown && skinSearch && (
+                      <div className="absolute z-10 w-full mt-2 max-h-56 overflow-y-auto bg-[#0F172A] border border-border rounded-xl shadow-2xl custom-scrollbar py-2">
+                        {filteredSkins.length > 0 ? (
+                          filteredSkins.slice(0, 30).map((skin) => (
+                            <div
+                              key={skin}
+                              onClick={() => {
+                                toggleSkin(skin);
+                                setSkinSearch(""); // Bersihkan pencarian setelah klik
+                                // Biarkan dropdown tetap ada sebentar jika user ingin tambah lagi
+                              }}
+                              className="px-4 py-2.5 text-sm text-gray-300 hover:bg-accent hover:text-white cursor-pointer transition-colors"
+                            >
+                              {skin}
+                            </div>
+                          ))
+                        ) : (
+                          <div className="px-4 py-3 text-sm text-muted-foreground text-center">
+                            Tidak ada skin yang cocok. <br/> (Ejaan harus benar)
+                          </div>
+                        )}
+                      </div>
+                    )}
+                  </div>
+                </div>
 
                 {/* AREA AGENT KHUSUS */}
                 <div className="space-y-4 p-5 rounded-xl border border-border bg-[#0A101E]/50">
@@ -498,19 +552,15 @@ const AdminPage = () => {
                   )}
                 </div>
 
-                {/* STATUS CHECKLIST */}
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-4 pt-4">
                   <label className="flex items-center gap-2 text-sm cursor-pointer">
-                    <input type="checkbox" checked={form.email_verified} onChange={(e) => setForm({ ...form, email_verified: e.target.checked })} className="w-4 h-4 rounded" />
-                    Email Verified
+                    <input type="checkbox" checked={form.email_verified} onChange={(e) => setForm({ ...form, email_verified: e.target.checked })} className="w-4 h-4 rounded" /> Email Verified
                   </label>
                   <label className="flex items-center gap-2 text-sm cursor-pointer">
-                    <input type="checkbox" checked={form.premier_unlinked} onChange={(e) => setForm({ ...form, premier_unlinked: e.target.checked })} className="w-4 h-4 rounded" />
-                    Premier Unlinked
+                    <input type="checkbox" checked={form.premier_unlinked} onChange={(e) => setForm({ ...form, premier_unlinked: e.target.checked })} className="w-4 h-4 rounded" /> Premier Unlinked
                   </label>
                   <label className="flex items-center gap-2 text-sm cursor-pointer">
-                    <input type="checkbox" checked={form.name_change} onChange={(e) => setForm({ ...form, name_change: e.target.checked })} className="w-4 h-4 rounded" />
-                    Name Change Ready
+                    <input type="checkbox" checked={form.name_change} onChange={(e) => setForm({ ...form, name_change: e.target.checked })} className="w-4 h-4 rounded" /> Name Change Ready
                   </label>
                 </div>
 

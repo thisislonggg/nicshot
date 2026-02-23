@@ -169,3 +169,18 @@
   0% { background-position: -200% 0; }
   100% { background-position: 200% 0; }
 }
+/* --- CUSTOM SCROLLBAR UNTUK INVENTORY BOX --- */
+.custom-scrollbar::-webkit-scrollbar {
+  width: 6px;
+}
+.custom-scrollbar::-webkit-scrollbar-track {
+  background: rgba(255, 255, 255, 0.02);
+  border-radius: 8px;
+}
+.custom-scrollbar::-webkit-scrollbar-thumb {
+  background: hsl(217 91% 60% / 0.3); /* Warna Accent tipis */
+  border-radius: 8px;
+}
+.custom-scrollbar::-webkit-scrollbar-thumb:hover {
+  background: hsl(217 91% 60% / 0.8); /* Warna Accent terang saat dihover */
+}
