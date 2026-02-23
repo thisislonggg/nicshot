@@ -1,10 +1,11 @@
 import { Link } from "react-router-dom";
 import { motion } from "framer-motion";
-import { Shield, Zap, CreditCard, ChevronRight, Star } from "lucide-react";
-import { useEffect, useState } from "react";
+import { Shield, Zap, CreditCard, ChevronRight, Star, TrendingUp, Users, ShoppingBag } from "lucide-react";
+import { useEffect, useState, useRef } from "react";
 import AccountCard from "@/components/AccountCard";
 import { fetchFeaturedAccounts } from "../services/account.service";
 import heroBg from "@/assets/hero-bg.jpg";
+
 
 interface Account {
   id: string;
@@ -29,10 +30,44 @@ const fadeUp = {
   }),
 };
 
+// Animated counter hook
+const useCounter = (target: number, duration: number = 2000) => {
+  const [count, setCount] = useState(0);
+  const ref = useRef<HTMLDivElement>(null);
+  const started = useRef(false);
+
+  useEffect(() => {
+    const observer = new IntersectionObserver(
+      ([entry]) => {
+        if (entry.isIntersecting && !started.current) {
+          started.current = true;
+          const startTime = Date.now();
+          const tick = () => {
+            const elapsed = Date.now() - startTime;
+            const progress = Math.min(elapsed / duration, 1);
+            const eased = 1 - Math.pow(1 - progress, 3);
+            setCount(Math.floor(eased * target));
+            if (progress < 1) requestAnimationFrame(tick);
+          };
+          tick();
+        }
+      },
+      { threshold: 0.5 }
+    );
+    if (ref.current) observer.observe(ref.current);
+    return () => observer.disconnect();
+  }, [target, duration]);
+
+  return { count, ref };
+};
+
 const Index = () => {
   const [featured, setFeatured] = useState<Account[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+   const stat1 = useCounter(500);
+  const stat2 = useCounter(1200);
+  const stat3 = useCounter(99)
 
   useEffect(() => {
     const loadFeatured = async () => {
@@ -110,6 +145,36 @@ const Index = () => {
         </div>
       </section>
 
+       {/* Live Stats */}
+      <section className="section-container py-16">
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+          {[
+            { ref: stat1.ref, count: stat1.count, suffix: "+", label: "Accounts Sold", icon: <ShoppingBag size={24} /> },
+            { ref: stat2.ref, count: stat2.count, suffix: "+", label: "Happy Customers", icon: <Users size={24} /> },
+            { ref: stat3.ref, count: stat3.count, suffix: "%", label: "Satisfaction Rate", icon: <TrendingUp size={24} /> },
+          ].map((item, i) => (
+            <motion.div
+              key={i}
+              ref={item.ref}
+              initial={{ opacity: 0, y: 20 }}
+              whileInView={{ opacity: 1, y: 0 }}
+              viewport={{ once: true }}
+              transition={{ delay: i * 0.1 }}
+              className="glass-card p-6 text-center dramatic-glow"
+            >
+              <div className="w-12 h-12 rounded-xl bg-accent/10 flex items-center justify-center mx-auto text-accent mb-3">
+                {item.icon}
+              </div>
+              <p className="font-heading text-3xl font-black gradient-text">
+                {item.count.toLocaleString()}{item.suffix}
+              </p>
+              <p className="text-sm text-muted-foreground mt-1">{item.label}</p>
+            </motion.div>
+          ))}
+        </div>
+      </section>
+
+
       {/* Featured */}
       <section className="section-container py-20">
         <div className="text-center mb-12">
@@ -163,6 +228,7 @@ const Index = () => {
           </div>
         )}
       </section>
+
 
       {/* How It Works */}
       <section className="section-container py-20">
